@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<!-- 
+  Quiet Time Diamond Collector
+  Copyright (c) 2025 Mykhailo Pozdnikin (Michael Phoenix). All rights reserved.
+  Redistribution, modification, or commercial use without 
+  explicit permission is strictly prohibited.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiet Time Diamond Collector</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f8ff;
+      text-align: center;
+      padding: 2rem;
+    }
+    h1 {
+      font-size: 2rem;
+    }
+    .score {
+      font-size: 3rem;
+      color: #00bcd4;
+      margin: 1rem 0;
+    }
+    .health {
+      font-size: 2rem;
+      color: red;
+      margin-bottom: 1rem;
+    }
+    .slider-container {
+      margin: 1rem 0;
+    }
+    .slider-container label {
+      font-size: 1.2rem;
+    }
+    .slider-container input {
+      width: 300px;
+    }
+    .buttons {
+      margin: 2rem 0;
+    }
+    .buttons button {
+      font-size: 1rem;
+      margin: 0 1rem;
+      padding: 0.5rem 1rem;
+      border: none;
+      background-color: #00bcd4;
+      color: white;
+      border-radius: 0.5rem;
+      cursor: pointer;
+    }
+    .buttons button:hover {
+      background-color: #0097a7;
+    }
+    .volume-meter {
+      width: 300px;
+      height: 20px;
+      background-color: #ccc;
+      margin: 1rem auto;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .volume-fill {
+      height: 100%;
+      background-color: #4caf50;
+      width: 0%;
+      transition: width 0.1s ease-out;
+    }
+    .settings-toggle {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background-color: #00bcd4;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 0.5rem;
+      cursor: pointer;
+    }
+    .settings-panel {
+      display: none;
+      margin-top: 1rem;
+      background: #e0f7fa;
+      padding: 1rem;
+      border-radius: 10px;
+    }
+    
+    .heart-controls {
+      margin: 1rem 0;
+    }
+    
+    .heart-controls button {
+      font-size: 1rem;
+      margin: 0 0.5rem;
+      padding: 0.5rem 1rem;
+      border: none;
+      background-color: #e91e63;
+      color: white;
+      border-radius: 0.5rem;
+      cursor: pointer;
+    }
+    
+    .heart-controls button:hover {
+      background-color: #c2185b;
+    }
+    
+    /* Badge System Styles - moved to top left */
+    .badge-strip {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border-radius: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      min-height: 60px;
+      align-items: center;
+    }
+    
+    .badge {
+      font-size: 2.5rem;
+      opacity: 0;
+      transform: scale(0);
+      transition: all 0.3s ease;
+      animation: none;
+    }
+    
+    .badge.earned {
+      opacity: 1;
+      transform: scale(1);
+    }
+    
+    @keyframes sparkle {
+      0% { 
+        transform: scale(0) rotate(0deg);
+        opacity: 0;
+      }
+      50% { 
+        transform: scale(1.5) rotate(180deg);
+        opacity: 1;
+        filter: brightness(2) drop-shadow(0 0 20px currentColor);
+      }
+      100% { 
+        transform: scale(1) rotate(360deg);
+        opacity: 1;
+        filter: brightness(1) drop-shadow(0 0 5px currentColor);
+      }
+    }
+    
+    .badge.sparkle {
+      animation: sparkle 3s ease-in-out;
+    }
+    
+    .immunity-indicator {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 215, 0, 0.9);
+      color: #333;
+      padding: 20px 40px;
+      border-radius: 15px;
+      font-size: 1.5rem;
+      font-weight: bold;
+      z-index: 2000;
+      box-shadow: 0 4px 20px rgba(255, 215, 0, 0.5);
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0);
+      transition: all 0.3s ease;
+    }
+    
+    .immunity-indicator.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    
+    .badge-progress {
+      font-size: 1.2rem;
+      color: #666;
+      margin: 0.5rem 0;
+      font-weight: bold;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 10px;
+      border-radius: 10px;
+      display: inline-block;
+    }
+
+    .grace-status {
+      font-size: 1.1rem;
+      color: #ff9800;
+      margin: 0.5rem 0;
+      font-weight: bold;
+      min-height: 1.5rem;
+    }
+    
+    .checkbox-container {
+      font-size: 1.2rem;
+    }
+
+    .top-buttons {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .top-buttons button {
+      background-color: #00bcd4;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+    }
+
+    .top-buttons button:hover {
+      background-color: #0097a7;
+    }
+
+    /* About Modal Styles */
+    .about-modal {
+      display: none; /* Hidden by default */
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 3000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .about-content {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .about-content h2 {
+      margin-top: 0;
+    }
+
+    .about-close {
+      margin-top: 1rem;
+      padding: 0.5rem 1rem;
+      background-color: #00bcd4;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .about-close:hover {
+      background-color: #0097a7;
+    }
+
+  </style>
+</head>
+<body>
+  <h1>💎 Quiet Time Diamond Collector 💎</h1>
+  <div class="score">Diamonds: <span id="score">0</span></div>
+  <div class="badge-progress" id="badgeProgress">Next Badge: 300 💎 (Need 300 more)</div>
+  <div class="health" id="health">❤️❤️</div>
+
+  <!-- Badge Strip - moved to top left -->
+  <div class="badge-strip" id="badgeStrip">
+    <div class="badge" id="bronzeBadge">🥉</div>
+    <div class="badge" id="silverBadge">🥈</div>
+    <div class="badge" id="goldBadge">🥇</div>
+    <div class="badge" id="emeraldBadge">💚</div>
+    <div class="badge" id="diamondBadge">💎</div>
+    <div class="badge" id="netheriteBadge">⚫</div>
+  </div>
+  
+  <!-- Immunity Indicator -->
+  <div class="immunity-indicator" id="immunityIndicator">
+    🎉 Badge Earned! 🎉
+  </div>
+
+  <div class="slider-container">
+    <label for="threshold">Noise Threshold: <span id="thresholdValue">5</span></label><br />
+    <input type="range" id="threshold" min="1" max="10" step="1" value="5" />
+  </div>
+
+  <div class="volume-meter">
+    <div class="volume-fill" id="volumeFill"></div>
+  </div>
+
+  <div class="buttons">
+    <button id="startBtn">Start</button>
+    <button id="stopBtn">Stop</button>
+    <button id="resetBtn">Reset</button>
+  </div>
+
+  <div class="top-buttons">
+    <button id="settingsToggle">⚙️ Settings</button>
+    <button id="aboutToggle">ℹ️ About</button>
+  </div>
+  
+  <!-- Heart restore buttons - always visible -->
+  <div class="heart-controls">
+    <button onclick="restoreHearts()">Restore All Hearts</button>
+    <button onclick="restoreOneHeart()">Restore One Heart</button>
+  </div>
+  
+  <div class="settings-panel" id="settingsPanel">
+    <div class="slider-container">
+      <label for="gain">Mic Sensitivity: <span id="gainValue">3.0</span></label><br />
+      <input type="range" id="gain" min="0.5" max="5.0" step="0.1" value="3.0" />
+    </div>
+
+    <div class="slider-container">
+      <label for="interval">Diamond Interval (sec): <span id="intervalValue">1</span></label><br />
+      <input type="number" id="interval" min="0.5" max="10000" step="0.5" value="1" />
+    </div>
+
+    <div class="slider-container">
+      <label for="maxHearts">Number of Hearts: <span id="maxHeartsValue">2</span></label><br />
+      <input type="number" id="maxHearts" min="1" max="100" value="2" />
+    </div>
+
+    <div class="slider-container">
+      <label for="restoreThreshold">Diamonds for Heart Restore: <span id="restoreThresholdValue">100</span></label><br />
+      <input type="number" id="restoreThreshold" min="10" max="500" value="100" />
+    </div>
+
+    <div class="checkbox-container" style="text-align: center;">
+      <label>
+        <input type="checkbox" id="gracePeriodEnabled" checked style="margin-right: 8px;" /> Enable Grace Period
+      </label>
+    </div>
+    
+    <div class="slider-container" id="gracePeriodContainer">
+      <label for="gracePeriod">Grace Period (sec): <span id="gracePeriodValue">0.2</span></label><br />
+      <input type="range" id="gracePeriod" min="0.1" max="5.0" step="0.1" value="0.2" />
+    </div>
+  </div>
+
+  <div class="about-modal" id="aboutModal">
+  <div class="about-content">
+    <h2>About Quiet Time Diamond Collector</h2>
+    <p>
+      <strong>Quiet Time Diamond Collector</strong> is a classroom tool designed to 
+      support students during <em>deliberate practice</em>. It encourages 
+      focused, quiet working time in a fun and engaging way. 
+      Instead of penalties, students are motivated through rewards and playful challenges.
+    </p>
+    <ul style="text-align: left; display: inline-block;">
+      <li>💎 Earn diamonds by staying quiet during practice</li>
+      <li>🏅 Unlock special badges as you collect more diamonds</li>
+      <li>❤️ Keep your hearts by maintaining focus</li>
+      <li>➕ Restore hearts through consistent quiet effort</li>
+      <li>⚙️ Adjustable settings for different classroom needs</li>
+    </ul>
+    <p style="margin-top: 1rem; font-size: 0.9rem; color: #333;">
+      The aim is to make quiet, independent work a <em>positive challenge</em> rather than a restriction,
+      helping students build self-discipline while keeping learning engaging.
+    </p>
+    <p style="margin-top: 1rem; font-size: 0.9rem; color: #333;">
+      Copyright © 2025 Michael Phoenix (Mykhailo Pozdnikin). All rights reserved.<br>
+      Redistribution, modification, or commercial use without explicit permission is strictly prohibited.
+    </p>
+    <button class="about-close" id="aboutClose">Close</button>
+  </div>
+
+</div>
+
+
+  <p id="status">Waiting for microphone access...</p>
+
+  <script>
+    const scoreElement = document.getElementById('score');
+    const badgeProgressElement = document.getElementById('badgeProgress');
+    const thresholdSlider = document.getElementById('threshold');
+    const thresholdValue = document.getElementById('thresholdValue');
+    const gainSlider = document.getElementById('gain');
+    const gainValue = document.getElementById('gainValue');
+    const intervalSlider = document.getElementById('interval');
+    const intervalValue = document.getElementById('intervalValue');
+    const maxHeartsInput = document.getElementById('maxHearts');
+    const maxHeartsValue = document.getElementById('maxHeartsValue');
+    const restoreThresholdInput = document.getElementById('restoreThreshold');
+    const restoreThresholdValue = document.getElementById('restoreThresholdValue');
+    const gracePeriodSlider = document.getElementById('gracePeriod');
+    const gracePeriodValue = document.getElementById('gracePeriodValue');
+    const gracePeriodEnabled = document.getElementById('gracePeriodEnabled');
+    const gracePeriodContainer = document.getElementById('gracePeriodContainer');
+    const statusText = document.getElementById('status');
+    const volumeFill = document.getElementById('volumeFill');
+    const healthDisplay = document.getElementById('health');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const immunityIndicator = document.getElementById('immunityIndicator');
+
+    let score = 0;
+    let hearts = 2;
+    let maxHearts = 2;
+    let intervalId = null;
+    let noiseListenerId = null;
+    let currentGain = parseFloat(gainSlider.value);
+    let intervalMs = parseFloat(intervalSlider.value) * 1000;
+    let restoreDiamondThreshold = parseInt(restoreThresholdInput.value);
+    let gracePeriodMs = parseFloat(gracePeriodSlider.value) * 1000;
+    let isGracePeriodEnabled = gracePeriodEnabled.checked;
+    let audioContext, analyser, microphone, gainNode, dataArray;
+    let lastHeartTaken = 0;
+    let lastDiamondsTaken = 0;
+    let isImmune = false; // Immunity after earning a badge
+    let immunityEndTime = 0;
+    
+    // Grace period variables
+    let noiseStartTime = 0;
+    let isInGracePeriod = false;
+    let graceTimeoutId = null;
+    
+    // Debouncing variables
+    let noiseDetectionBuffer = [];
+    let quietDetectionBuffer = [];
+    const bufferSize = 5; // Check last 5 readings
+    let isCurrentlyNoisy = false;
+
+    // Badge system - based on diamonds collected
+    const badges = {
+      bronze: { threshold: 300, id: 'bronzeBadge', earned: false, emoji: '🥉' },
+      silver: { threshold: 500, id: 'silverBadge', earned: false, emoji: '🥈' },
+      gold: { threshold: 600, id: 'goldBadge', earned: false, emoji: '🥇' },
+      emerald: { threshold: 800, id: 'emeraldBadge', earned: false, emoji: '💚' },
+      diamond: { threshold: 900, id: 'diamondBadge', earned: false, emoji: '💎' },
+      netherite: { threshold: 1000, id: 'netheriteBadge', earned: false, emoji: '⚫' }
+    };
+
+    function allowOnlyIntegers(input) {
+      input.addEventListener('input', () => {
+        input.value = input.value.replace(/[^0-9]/g, '');
+      });
+    }
+
+    allowOnlyIntegers(maxHeartsInput);
+    allowOnlyIntegers(restoreThresholdInput);
+
+    function isBufferMostlyNoisy(buffer) {
+      if (buffer.length < bufferSize) return false;
+      const noisyCount = buffer.filter(val => val).length;
+      return noisyCount >= Math.ceil(bufferSize * 0.6); // 60% or more readings must be noisy
+    }
+
+    function isBufferMostlyQuiet(buffer) {
+      if (buffer.length < bufferSize) return false;
+      const quietCount = buffer.filter(val => !val).length;
+      return quietCount >= Math.ceil(bufferSize * 0.6); // 60% or more readings must be quiet
+    }
+
+    function startGracePeriod() {
+      if (isInGracePeriod) return; // Already in grace period
+      
+      console.log('Starting grace period');
+      const now = Date.now();
+      isInGracePeriod = true;
+      noiseStartTime = now;
+      
+      // Set timeout to reset diamonds and remove heart after grace period
+      graceTimeoutId = setTimeout(() => {
+        console.log('Grace period expired - resetting diamonds and removing heart');
+        // Reset diamonds only if grace period was exceeded
+        score = Math.floor(score / restoreDiamondThreshold) * restoreDiamondThreshold;
+        scoreElement.textContent = score;
+        updateBadgeProgress();
+        
+        // Remove heart only if grace period was exceeded
+        if (hearts > 0) {
+          hearts--;
+          updateHeartsDisplay();
+        }
+        
+        resetGracePeriod();
+      }, gracePeriodMs);
+    }
+
+    function resetGracePeriod() {
+      if (isInGracePeriod) {
+        console.log('Canceling grace period - player became quiet');
+      }
+      isInGracePeriod = false;
+      noiseStartTime = 0;
+      
+      if (graceTimeoutId) {
+        clearTimeout(graceTimeoutId);
+        graceTimeoutId = null;
+      }
+    }
+
+    function handleNoiseStateChange(isNoisy) {
+      if (isNoisy && !isCurrentlyNoisy) {
+        // Transitioned from quiet to noisy
+        isCurrentlyNoisy = true;
+        if (isGracePeriodEnabled && !isInGracePeriod) {
+          startGracePeriod();
+        } else if (!isGracePeriodEnabled) {
+          // Apply penalties immediately if grace period is disabled
+          applyNoisePenalties();
+        }
+      } else if (!isNoisy && isCurrentlyNoisy) {
+        // Transitioned from noisy to quiet
+        isCurrentlyNoisy = false;
+        if (isInGracePeriod) {
+          resetGracePeriod();
+        }
+      }
+    }
+
+    function applyNoisePenalties() {
+      console.log('Applying noise penalties immediately');
+      // Reset diamonds
+      score = Math.floor(score / restoreDiamondThreshold) * restoreDiamondThreshold;
+      scoreElement.textContent = score;
+      updateBadgeProgress();
+      
+      // Remove heart
+      if (hearts > 0) {
+        hearts--;
+        updateHeartsDisplay();
+      }
+    }
+
+    function updateHeartsDisplay() {
+      healthDisplay.textContent = '❤️'.repeat(hearts);
+    }
+
+    function updateBadgeProgress() {
+      // Find the next badge to earn
+      let nextBadge = null;
+      let nextBadgeName = '';
+      
+      for (const [badgeName, badge] of Object.entries(badges)) {
+        if (!badge.earned && (nextBadge === null || badge.threshold < nextBadge.threshold)) {
+          nextBadge = badge;
+          nextBadgeName = badgeName;
+        }
+      }
+      
+      if (nextBadge) {
+        const needed = nextBadge.threshold - score;
+        badgeProgressElement.textContent = `Next Badge: ${nextBadge.threshold} ${nextBadge.emoji} (Need ${needed} more 💎)`;
+      } else {
+        badgeProgressElement.textContent = 'All badges earned! 🎉';
+      }
+    }
+
+    function checkBadges() {
+      for (const [badgeName, badge] of Object.entries(badges)) {
+        if (!badge.earned && score >= badge.threshold) {
+          earnBadge(badgeName, badge);
+          break; // Only earn one badge at a time
+        }
+      }
+    }
+
+    function earnBadge(badgeName, badge) {
+      badge.earned = true;
+      const badgeElement = document.getElementById(badge.id);
+      
+      // Add sparkle animation
+      badgeElement.classList.add('sparkle');
+      badgeElement.classList.add('earned');
+      
+      // Show immunity indicator
+      showImmunityIndicator();
+      
+      // Start immunity period (4 seconds)
+      startImmunity();
+      
+      // Remove sparkle animation after 3 seconds
+      setTimeout(() => {
+        badgeElement.classList.remove('sparkle');
+      }, 3000);
+    }
+
+    function showImmunityIndicator() {
+      immunityIndicator.classList.add('show');
+      setTimeout(() => {
+        immunityIndicator.classList.remove('show');
+      }, 4000);
+    }
+
+    function startImmunity() {
+      isImmune = true;
+      immunityEndTime = Date.now() + 4000; // 4 seconds
+      setTimeout(() => {
+        isImmune = false;
+      }, 4000);
+    }
+
+    function restoreHearts() {
+      hearts = maxHearts;
+      updateHeartsDisplay();
+    }
+
+    function restoreOneHeart() {
+      if (hearts < maxHearts) {
+        hearts++;
+        updateHeartsDisplay();
+      }
+    }
+
+    function toggleSettings() {
+      const settingsPanel = document.getElementById('settingsPanel');
+      if (settingsPanel.style.display === 'none' || settingsPanel.style.display === '') {
+        settingsPanel.style.display = 'block';
+      } else {
+        settingsPanel.style.display = 'none';
+      }
+    }
+
+    // Add event listener for settings toggle
+    document.getElementById('settingsToggle').addEventListener('click', toggleSettings);
+
+    thresholdSlider.addEventListener('input', () => {
+      thresholdValue.textContent = thresholdSlider.value;
+    });
+
+    gainSlider.addEventListener('input', () => {
+      currentGain = parseFloat(gainSlider.value);
+      gainValue.textContent = currentGain.toFixed(1);
+      if (gainNode) gainNode.gain.value = currentGain;
+    });
+
+    intervalSlider.addEventListener('input', () => {
+      let value = parseFloat(intervalSlider.value);
+
+      if (isNaN(value) || value <= 0) {
+        value = 1;
+        intervalValue.textContent = value;
+      }
+
+      intervalMs = value * 1000;
+      intervalValue.textContent = value;
+
+      if (intervalId) {
+        stopTracking();
+        startTracking();
+      }
+    });
+
+    maxHeartsInput.addEventListener('input', () => {
+      maxHearts = parseInt(maxHeartsInput.value);
+      maxHeartsValue.textContent = maxHeartsInput.value;
+      if (hearts > maxHearts) hearts = maxHearts;
+      updateHeartsDisplay();
+    });
+
+    restoreThresholdInput.addEventListener('input', () => {
+      restoreDiamondThreshold = parseInt(restoreThresholdInput.value);
+      restoreThresholdValue.textContent = restoreThresholdInput.value;
+    });
+
+    gracePeriodSlider.addEventListener('input', () => {
+      gracePeriodMs = parseFloat(gracePeriodSlider.value) * 1000;
+      gracePeriodValue.textContent = parseFloat(gracePeriodSlider.value).toFixed(1);
+    });
+
+    gracePeriodEnabled.addEventListener('change', () => {
+      isGracePeriodEnabled = gracePeriodEnabled.checked;
+      // Show/hide grace period slider based on checkbox
+      gracePeriodContainer.style.display = isGracePeriodEnabled ? 'block' : 'none';
+      
+      // If grace period is disabled while active, cancel it and apply penalties
+      if (!isGracePeriodEnabled && isInGracePeriod) {
+        resetGracePeriod();
+        if (isCurrentlyNoisy) {
+          applyNoisePenalties();
+        }
+      }
+    });
+
+    async function initMicrophone() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        gainNode = audioContext.createGain();
+        gainNode.gain.value = currentGain;
+
+        microphone = audioContext.createMediaStreamSource(stream);
+        microphone.connect(gainNode);
+        gainNode.connect(analyser);
+
+        analyser.fftSize = 256;
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        requestAnimationFrame(updateVolumeMeter);
+        updateHeartsDisplay();
+        updateBadgeProgress();
+        statusText.textContent = 'Microphone is ready. Click Start to begin collecting!';
+      } catch (error) {
+        statusText.textContent = 'Microphone access denied or not available.';
+        console.error(error);
+      }
+    }
+
+    function getAverageVolume(array) {
+      let sum = 0;
+      for (let i = 0; i < array.length; i++) {
+        sum += Math.abs(array[i] - 128);
+      }
+      return sum / array.length / 128;
+    }
+
+    function updateVolumeMeter() {
+      if (analyser && dataArray) {
+        analyser.getByteTimeDomainData(dataArray);
+        const volume = getAverageVolume(dataArray);
+        volumeFill.style.width = Math.min(100, volume * 100) + '%';
+      }
+      requestAnimationFrame(updateVolumeMeter);
+    }
+
+    function startNoiseListener() {
+      if (noiseListenerId !== null) return;
+      noiseListenerId = setInterval(() => {
+        // Skip noise detection during immunity period
+        if (isImmune) return;
+        
+        analyser.getByteTimeDomainData(dataArray);
+        const volume = getAverageVolume(dataArray);
+        const threshold = parseFloat(thresholdSlider.value) / 50;
+        const adjustedVolume = volume / currentGain;
+        const now = Date.now();
+        
+        // Add current reading to buffer
+        const isNoisy = adjustedVolume >= threshold;
+        
+        if (isGracePeriodEnabled) {
+          // Use debounced detection with grace period
+          noiseDetectionBuffer.push(isNoisy);
+          if (noiseDetectionBuffer.length > bufferSize) {
+            noiseDetectionBuffer.shift();
+          }
+          
+          // Check for state changes using debounced readings
+          if (noiseDetectionBuffer.length === bufferSize) {
+            const shouldBeNoisy = isBufferMostlyNoisy(noiseDetectionBuffer);
+            const shouldBeQuiet = isBufferMostlyQuiet(noiseDetectionBuffer);
+            
+            if (shouldBeNoisy) {
+              handleNoiseStateChange(true);
+            } else if (shouldBeQuiet) {
+              handleNoiseStateChange(false);
+            }
+          }
+        } else {
+          // Immediate penalties when grace period is disabled
+          if (isNoisy && hearts > 0 && now - lastHeartTaken > 1000) {
+            hearts--;
+            updateHeartsDisplay();
+            lastHeartTaken = now;
+          }
+          
+          if (isNoisy && score > 0 && now - lastDiamondsTaken > 500) {
+            score = Math.floor(score / restoreDiamondThreshold) * restoreDiamondThreshold;
+            scoreElement.textContent = score;
+            updateBadgeProgress();
+            lastDiamondsTaken = now;
+          }
+        }
+      }, 100);
+    }
+
+    function stopNoiseListener() {
+      clearInterval(noiseListenerId);
+      noiseListenerId = null;
+    }
+
+    function startTracking() {
+      if (intervalId !== null) return;
+      startNoiseListener();
+
+      intervalId = setInterval(() => {
+        // Skip diamond earning during immunity period
+        if (isImmune) return;
+        
+        analyser.getByteTimeDomainData(dataArray);
+        const volume = getAverageVolume(dataArray);
+        const threshold = parseFloat(thresholdSlider.value);
+        const adjustedVolume = volume / currentGain;
+
+        // Diamond earning logic depends on grace period setting
+        if (isGracePeriodEnabled) {
+          // Only earn diamonds if we're consistently quiet (not currently noisy)
+          if (adjustedVolume < threshold && !isCurrentlyNoisy) {
+            score++;
+            if (score % restoreDiamondThreshold === 0 && hearts < maxHearts) {
+              hearts++;
+              updateHeartsDisplay();
+            }
+            checkBadges();
+          }
+        } else {
+          // Immediate mode - earn diamonds when below threshold
+          if (adjustedVolume < threshold) {
+            score++;
+            if (score % restoreDiamondThreshold === 0 && hearts < maxHearts) {
+              hearts++;
+              updateHeartsDisplay();
+            }
+            checkBadges();
+          }
+        }
+
+        scoreElement.textContent = score;
+        updateBadgeProgress();
+      }, intervalMs);
+
+      statusText.textContent = 'Listening... Stay quiet to earn diamonds and badges!';
+    }
+
+    function stopTracking() {
+      clearInterval(intervalId);
+      intervalId = null;
+      stopNoiseListener();
+      resetGracePeriod(); // Clear any pending grace period
+      statusText.textContent = 'Paused. Click Start to continue.';
+    }
+
+    function resetScore() {
+      score = 0;
+      scoreElement.textContent = score;
+      updateBadgeProgress();
+      restoreHearts();
+      resetGracePeriod(); // Clear any pending grace period
+      
+      // Reset debouncing state
+      noiseDetectionBuffer = [];
+      quietDetectionBuffer = [];
+      isCurrentlyNoisy = false;
+      
+      // Reset all badges
+      for (const badge of Object.values(badges)) {
+        badge.earned = false;
+        const badgeElement = document.getElementById(badge.id);
+        badgeElement.classList.remove('earned', 'sparkle');
+      }
+      
+      // Clear immunity
+      isImmune = false;
+      immunityIndicator.classList.remove('show');
+    }
+
+    const aboutModal = document.getElementById('aboutModal');
+    const aboutToggle = document.getElementById('aboutToggle');
+    const aboutClose = document.getElementById('aboutClose');
+
+    aboutToggle.addEventListener('click', () => {
+      aboutModal.style.display = 'flex';
+    });
+
+    aboutClose.addEventListener('click', () => {
+      aboutModal.style.display = 'none';
+    });
+
+    window.addEventListener('click', (event) => {
+      if (event.target === aboutModal) {
+        aboutModal.style.display = 'none';
+      }
+    });
+
+    startBtn.addEventListener('click', startTracking);
+    stopBtn.addEventListener('click', stopTracking);
+    resetBtn.addEventListener('click', resetScore);
+
+    initMicrophone();
+  </script>
+
+</body>
+</html>
